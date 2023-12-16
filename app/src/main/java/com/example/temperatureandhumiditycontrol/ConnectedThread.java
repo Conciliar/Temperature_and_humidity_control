@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.regex.Pattern;
 
 //Once a socket has connected, this class will attempt to read data from the bluetooth module
 public class ConnectedThread extends Thread {
@@ -33,19 +34,18 @@ public class ConnectedThread extends Thread {
         byte[] buffer = new byte[1024];
         int bytes = 0;
 
-        //IDK
-        for (int i = 0; i < 50; i++) {
+        while (true) {
             try {
                 buffer[bytes] = (byte) inputStream.read();
                 String readMessage;
                 Log.d(TAG, "Reading data");
+                readMessage = new String(buffer, 0, bytes);
 
                 //If we detect a new line it means we read a full measurement
-                if (buffer[bytes] == '\n') {
-                    readMessage = new String(buffer, 0, bytes);
-                    value = readMessage;
-                    bytes = 0;
+                if (Pattern.matches("%\r\nTemperature: ([0-9]*\\.[0-9]*) °C Humidity: ([0-9]*\\.[0-9]*) %\r\n", readMessage)) {
+                    value = readMessage.substring(1);
                     Log.d(TAG, "End of line");
+                    break;
                 }
 
                 else {
@@ -53,7 +53,9 @@ public class ConnectedThread extends Thread {
                 }
 
 
-            } catch (IOException e) {
+            }
+
+            catch (IOException e) {
                 Log.d(TAG, "Input stream was disconnected", e);
             }
         }
